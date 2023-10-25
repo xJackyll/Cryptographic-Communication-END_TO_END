@@ -1,2 +1,8 @@
 # Cryptographic-Communication-END_TO_END
-A fun project that allows you to chat on the local network with diffie-hellman encryption
+This is a project that let you communicate in the local network encrypting the messages with Diffie-Hellman.
+
+Requirements:
+- install cryptography
+
+Tips:
+- Disable the virtual network of your Vm's because it may cause problems
