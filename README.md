@@ -9,3 +9,5 @@ Tips:
 - Disable the virtual network of your Vm's because it may cause problems
 
 P.S this script provides a good level of security in terms of encryption, but does not take action for attacks such as MITM
+
+IWTC = I Want To Chat :)
