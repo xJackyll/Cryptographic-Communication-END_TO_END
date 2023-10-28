@@ -1,5 +1,6 @@
 # Cryptographic-Communication-END_TO_END
 This is a project that allows you to communicate with those who have the same script in the local network encrypting the messages with Diffie-Hellman.
+This project is still under testing and it's NOT the final version
 
 Requirements:
 - install cryptography
