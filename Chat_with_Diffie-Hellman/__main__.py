@@ -167,7 +167,7 @@ time.sleep(2)
 Key = str(pow_mod(int(messaggi[-1][-2]), a, int(h)))
 
 # We add a padding in order to always have a 32 digit Key
-Key = int(Key.ljust(32, "0"))
+Key = Key.ljust(32, "0")
 print(f"THE KEY IS {Key}")
 Thread_Rcv.cypher()
 
@@ -189,4 +189,3 @@ while True:
     MESSAGE_TO_SEND = encryption(MESSAGE_TO_SEND, Key)
     mex_sender(MESSAGE_TO_SEND, ip_address_of_the_other, Udp_Port_Listener)
     print("message sended!")
-
