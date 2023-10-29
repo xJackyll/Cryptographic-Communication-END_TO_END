@@ -164,8 +164,10 @@ mex_sender(A, ip_address_of_the_other, Udp_Port_Listener)
 time.sleep(2)
 
 # WE FIND THE NUMBER WE WILL USE TO COMUNICATE DOING THIS LAST POW
-Key = pow_mod(int(messaggi[-1][-2]), a, int(h))
-Key = str(Key)
+Key = str(pow_mod(int(messaggi[-1][-2]), a, int(h)))
+
+# We add a padding in order to always have a 32 digit Key
+Key = int(Key.ljust(32, "0"))
 print(f"THE KEY IS {Key}")
 Thread_Rcv.cypher()
 
