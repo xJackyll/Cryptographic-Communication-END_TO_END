@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import socket
 import threading
 import time
@@ -82,110 +83,135 @@ def mex_sender(MESSAGE, UDP_IP_SENDER, UDP_PORT_SENDER):
 # --------------------------------------------------------------------------------------------------------------------------------------------
 # Script Start
 
-# Set the variables
-messaggi = []
-msg_standard = "IWTC"
-Udp_Port_Listener = 5005
-Udp_Port_Sender = 5006
-hostname, own_ip_address = ip_and_machine_name_finder()
+if __name__ == "__main__":
+    # Set the variables
+    messaggi = []
+    msg_standard = "IWTC"
+    Udp_Port_Listener = 5005
+    Udp_Port_Sender = 5006
+    hostname, own_ip_address = ip_and_machine_name_finder()
 
-# printing the hostname and ip_address
-print(f"Hostname: {hostname}")
-print(f"IP Address: {own_ip_address}")
+    # printing the hostname and ip_address
+    print(f"Hostname: {hostname}")
+    print(f"IP Address: {own_ip_address}")
 
-# Starting the broadcast thread
-Thread_Br = MexBroadcastClass()
-mex_br_d = threading.Thread(target=Thread_Br.mex_broadcast, args=(Udp_Port_Listener,))
-mex_br_d.daemon = True
-mex_br_d.start()
+    # Starting the broadcast thread
+    Thread_Br = MexBroadcastClass()
+    mex_br_d = threading.Thread(target=Thread_Br.mex_broadcast, args=(Udp_Port_Listener,))
+    mex_br_d.daemon = True
+    mex_br_d.start()
 
-# Starting the listener thread
-Thread_Rcv = MexReceiverClass()
-mex_rcv_d = threading.Thread(target=Thread_Rcv.mex_receiver, args=(True,))
-mex_rcv_d.daemon = True
-mex_rcv_d.start()
-
-
-while mex_br_d.is_alive():
-    time.sleep(0.1)
-
-    # this while wait until a message arrives
-    if len(messaggi) != 0:
-        # we wait some time for our broadcast thread to send the message
-        message_received, ip_address_of_the_other = messaggi[0]
-        messaggi.pop(0)
-        # if it is the message that want to start the conversation it stops the broadcasting
-        if message_received == msg_standard:
-            time.sleep(2)
-            Thread_Br.terminate()
-            mex_br_d.join(3)
+    # Starting the listener thread
+    Thread_Rcv = MexReceiverClass()
+    mex_rcv_d = threading.Thread(target=Thread_Rcv.mex_receiver, args=(True,))
+    mex_rcv_d.daemon = True
+    mex_rcv_d.start()
 
 
-# Now we want to do the diffie-hellman key exchange. keep in mind that this is vulnerable to the MITM
-# (I could've smushed this code but i want to make the code the most clean possible)
-#  if your own ip is the lower one you generate a random 32 digits number
+    while mex_br_d.is_alive():
+        time.sleep(0.1)
 
-g = 2
+        # this while wait until a message arrives
+        if len(messaggi) != 0:
+            # we wait some time for our broadcast thread to send the message
+            message_received, ip_address_of_the_other = messaggi[0]
+            messaggi.pop(0)
+            # if it is the message that want to start the conversation it stops the broadcasting
+            if message_received == msg_standard:
+                time.sleep(2)
+                Thread_Br.terminate()
+                mex_br_d.join(3)
 
-# We empty the queue
-time.sleep(2)
-messaggi.clear()  # FIX THIS
-time.sleep(2)
 
-if own_ip_address < ip_address_of_the_other:
-    # h is always a big number in order to prevent brute-force attacks
-    h = generate_random_32_digits()
+    # Now we want to do the diffie-hellman key exchange. keep in mind that this is vulnerable to the MITM
+    # (I could've smushed this code but i want to make the code the most clean possible)
+    #  if your own ip is the lower one you generate a random 32 digits number
 
-    # We then share our result with the other person
-    mex_sender(h, ip_address_of_the_other, Udp_Port_Listener)
+    g = 2
 
-else:
-    # if we not share the number we wait for it and also check if is valid
-    # We wait until a mex arrives
-    while len(messaggi) == 0:
-        time.sleep(1)
+    # We empty the queue
+    time.sleep(2)
+    messaggi.clear()  # FIX THIS
+    time.sleep(2)
 
-    if check_32_digit_number(messaggi[-1][-2]):
-        h = messaggi[-1][-2]
+    if own_ip_address < ip_address_of_the_other:
+        # h is always a big number in order to prevent brute-force attacks
+        h = generate_random_32_digits()
+
+        # We then share our result with the other person
+        mex_sender(h, ip_address_of_the_other, Udp_Port_Listener)
+
     else:
-        raise Exception("Error. Expected a different message")
+        # if we not share the number we wait for it and also check if is valid
+        # We wait until a mex arrives
+        while len(messaggi) == 0:
+            time.sleep(1)
 
-# I choose a random number < h
-a = SecretNumber(int(h))
+        if check_32_digit_number(messaggi[-1][-2]):
+            h = messaggi[-1][-2]
+        else:
+            raise Exception("Error. Expected a different message")
 
-# calculating the remainder
-A = pow_mod(g, a, int(h))
+    # I choose a random number < h
+    a = SecretNumber(int(h))
 
-print(f"\n\nIL NUMERO DECISO E':{h}\nIL NUMERO SEGRETO E':{a}\nIL CALCOLO E':{A}\n")
+    # calculating the remainder
+    A = pow_mod(g, a, int(h))
 
-# NOW WE SEND THE RESULT OF THE OPERATION AND WE WAIT FOR THE RESPONSE
-time.sleep(2)
-mex_sender(A, ip_address_of_the_other, Udp_Port_Listener)
-time.sleep(2)
+    print(f"\n\nTHE DECIDED NUMBER IS:{h}\nTHE SECRET NUMBER IS:{a}\nTHE CALCULATION IS:{A}\n")
 
-# WE FIND THE NUMBER WE WILL USE TO COMUNICATE DOING THIS LAST POW
-Key = str(pow_mod(int(messaggi[-1][-2]), a, int(h)))
+    # NOW WE SEND THE RESULT OF THE OPERATION AND WE WAIT FOR THE RESPONSE
+    time.sleep(2)
+    mex_sender(A, ip_address_of_the_other, Udp_Port_Listener)
+    time.sleep(2)
 
-# We add a padding in order to always have a 32 digit Key
-Key = Key.ljust(32, "0")
-print(f"THE KEY IS {Key}")
-Thread_Rcv.cypher()
+    # WE FIND THE NUMBER WE WILL USE TO COMUNICATE DOING THIS LAST POW
+    Key = str(pow_mod(int(messaggi[-1][-2]), a, int(h)))
 
-input("Press any button to start messaging with encryption END-TO-END with the other person\n")
+    # We add a padding in order to always have a 32 digit Key
+    Key = Key.ljust(32, "0")
+    print(f"THE KEY IS {Key}")
+    Thread_Rcv.cypher()
 
-# we clear the screen
-os.system('cls' if os.name == 'nt' else 'clear')
+    # we clear the screen
+    input("Press any button to start messaging with encryption END-TO-END with the other person\n")
+    messaggi.clear()
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
-# Now we can communicate with the conversation being encrypted
-print("type 'quit' to exit the communication.")
-while True:
-    MESSAGE_TO_SEND = input("")
+    # Now we can communicate with the conversation being encrypted
+    print("type 'help' to view the list of the commands.")
+    command1 = "help"
+    command2 = "history"
+    command3 = "clear"
+    command4 = "quit"
 
-    if MESSAGE_TO_SEND == "quit":
-        print("exiting...")
-        exit(1)
-    
-    MESSAGE_TO_SEND = encryption(MESSAGE_TO_SEND, Key)
-    mex_sender(MESSAGE_TO_SEND, ip_address_of_the_other, Udp_Port_Listener)
-    print("message sended!")
+
+    while True:
+        MESSAGE_TO_SEND = input("")
+
+        if MESSAGE_TO_SEND == command1:
+            print("\nList of the available commands:")
+            print(command1)
+            print(command2)
+            print(command3)
+            print(command4 +"\n")
+
+        elif MESSAGE_TO_SEND == command2:
+            print("\nHistory of messages received:")
+            for messaggio in range(len(messaggi)):
+                print(messaggi[messaggio][0].decode())
+            print("\n")
+
+        elif MESSAGE_TO_SEND == command3:
+            print("clearing text...")
+            os.system('cls' if os.name == 'nt' else 'clear')
+
+        elif MESSAGE_TO_SEND == command4:
+            print("exiting...")
+            exit(1)
+
+        else:
+            MESSAGE_TO_SEND = encryption(MESSAGE_TO_SEND, Key)
+            mex_sender(MESSAGE_TO_SEND, ip_address_of_the_other, Udp_Port_Listener)
+            print("message sended!")
